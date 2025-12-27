@@ -1,0 +1,42 @@
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+      runtime_minutes:   0.78
+      model_number:          105
+      star_age:     1.7914939938443656E+03
+      num_retries:            2
+      log_rel_run_E_err:        -6.2600672582379673
+      steps:         1942
+      retries:           11
+      redos:            0
+      solver_calls_made:         1953
+      solver_calls_failed:           11
+      solver_iterations:         5798
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+      runtime_minutes:   3.00
+      model_number:          307
+      star_age:     1.1674010774448627E+04
+      num_retries:           41
+      log_rel_run_E_err:        -3.8349031276839765
+      steps:          761
+      retries:           54
+      redos:            0
+      solver_calls_made:          815
+      solver_calls_failed:           54
+      solver_iterations:         3638
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
+    - inlist: inlist_high_mass_header
