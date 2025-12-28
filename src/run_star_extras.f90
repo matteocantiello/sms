@@ -266,7 +266,7 @@
             G_mesa = s% cgrav(k)  ! This is G_eff (~10^-8)
 
             ! 2. Print comparison for a few zones (e.g., deep inside where GR matters)
-            if (mod(k, 100) == 0 .and. m > 0.1_dp*s% mstar) then
+            if (mod(k, 100) == 0 .and. m > 0.1_dp * (s% star_mass * Msun)) then
                write(*, '(A, I4, 4ES14.6)') 'TOV Check k=', k, &
                       tov_factor, G_mesa/G_const
                
@@ -279,139 +279,26 @@
       end subroutine check_tov_correction
 
       
-      ! subroutine check_gr_instability(id, s, ierr)
-      ! ! ------------------------------------------------------------------------------
-      ! ! GR INSTABILITY MONITOR (v1.0 // M.Cantiello // 12.2025)
-      ! !
-      ! ! Purpose:
-      ! !   Monitors the stability of Supermassive Stars against General Relativistic 
-      ! !   radial instability. It computes the Chandrasekhar (1964) stability integral
-      ! !   to detect the onset of collapse.
-      ! !
-      ! ! Physics:
-      ! !   1. Calculates the stability integral I, which includes:
-      ! !      - Newtonian Stiffness Term: Integral[ (Gamma1 - 4/3) * (P/rho) dm ]
-      ! !      - GR Destabilizing Term: Integral[ K * (2Gm/rc^2) * (P/rho) dm ]
-      ! !      If I < 0, the fundamental radial mode frequency is imaginary (unstable).
-      ! !
-      ! !   2. Computes global diagnostics for comparison with literature (e.g. Nagele+2022):
-      ! !      - Pressure-weighted average <Gamma1>
-      ! !      - Global Compactness parameter (2GM / Rc^2)
-      ! !      - Critical Gamma threshold (Gamma_crit = 4/3 + 1.12 * Compactness)
-      ! ! ------------------------------------------------------------------------------   
-
-      !    use star_def
-      !    use const_def
-      !    integer, intent(in) :: id
-      !    type (star_info), pointer :: s
-      !    integer, intent(out) :: ierr
-         
-      !    integer :: k
-      !    real(dp) :: dm, r_outer, r_inner, r_mid, m_mid, P, rho, gam1
-      !    real(dp) :: term_newton, term_gr, integral_val
-      !    real(dp) :: c2, G_const, compactness, local_comp
-         
-      !    ! Variables for Global Averages
-      !    real(dp) :: sum_weights, sum_weighted_gam, avg_gamma, crit_gamma, global_compactness
-      !    real(dp) :: current_R
-         
-      !    ierr = 0
-      !    c2 = clight**2
-      !    G_const = standard_cgrav
-
-      !    term_newton = 0.0_dp
-      !    term_gr = 0.0_dp
-      !    sum_weights = 0.0_dp
-      !    sum_weighted_gam = 0.0_dp
-         
-      !    do k = 1, s% nz
-            
-      !       ! 1. Load Cell Properties
-      !       dm = s% dm(k)
-      !       P = s% Peos(k)      
-      !       rho = s% rho(k)     
-      !       gam1 = s% gamma1(k) 
-            
-      !       ! 2. Geometry Centering
-      !       ! 's% dr' does not exist in some versions. We calculate r_mid manually.
-      !       ! MESA indexing: k=1 (Surface) -> k=nz (Center)
-      !       r_outer = s% r(k)
-            
-      !       if (k < s% nz) then
-      !          r_inner = s% r(k+1)
-      !       else
-      !          r_inner = 0.0_dp
-      !       end if
-            
-      !       r_mid = 0.5_dp * (r_outer + r_inner)
-      !       m_mid = s% m(k) - 0.5_dp * dm 
-            
-      !       if (r_mid < 1.0d5) cycle 
-            
-      !       ! 3. Instability Integral Terms
-      !       ! Newtonian Stiffness
-      !       term_newton = term_newton + (gam1 - 4.0_dp/3.0_dp) * (P/rho) * dm
-            
-      !       ! GR Correction (local compactness at this shell)
-      !       local_comp = (2.0_dp * G_const * m_mid) / (r_mid * c2)
-      !       term_gr = term_gr + 1.12_dp * local_comp * (P/rho) * dm
-
-      !       ! 4. Accumulate Averages for Plotting
-      !       ! Weighting factor w = P/rho * dm (proportional to internal energy)
-      !       sum_weights = sum_weights + (P/rho) * dm
-      !       sum_weighted_gam = sum_weighted_gam + gam1 * (P/rho) * dm
-
-      !    end do
-         
-      !    ! --- Instability Integral Check ---
-      !    integral_val = term_newton - term_gr
-         
-      !    ! Use a safe extra column (ensure s% xtra1 is defined in your defaults, or just print)
-      !    s% xtra(1) = integral_val 
-
-      !    ! --- Global Parameters for Comparison with Papers ---
-      !    if (sum_weights > 0.0_dp) then
-      !       avg_gamma = sum_weighted_gam / sum_weights
-      !    else
-      !       avg_gamma = 0.0_dp
-      !    end if
-
-      !    ! Global Compactness (2GM / Rc^2)
-      !    ! Use s% r(1) for the surface radius (R_phot is not always available)
-      !    current_R = s% r(1)
-         
-      !    if (current_R > 0.0_dp) then
-      !       global_compactness = (2.0_dp * G_const * s% star_mass * Msun) / (current_R * Rsun * c2)
-      !    else
-      !       global_compactness = 0.0_dp
-      !    end if
-
-      !    ! Approximate Critical Gamma (Gamma_crit = 4/3 + 1.12 * Compactness)
-      !    crit_gamma = (4.0_dp/3.0_dp) + 1.12_dp * global_compactness
-
-      !    ! Print Status
-      !    ! Only print every 10 models or if unstable
-      !    if (mod(s% model_number, 10) == 0 .or. integral_val < 0.0_dp) then
-      !       write(*, '(A, I6)') '--- GR Monitor Model: ', s% model_number
-      !       write(*, '(A, ES12.5, A, ES12.5)') '   Integral Val: ', integral_val, &
-      !                                           ' (Neg = Unstable)'
-      !       write(*, '(A, F10.6, A, F10.6)')   '   <Gamma_1>:    ', avg_gamma, &
-      !                                           ' vs Crit: ', crit_gamma
-      !       write(*, '(A, ES12.5)')            '   Compactness:  ', global_compactness
-            
-      !       if (avg_gamma < crit_gamma) then
-      !          write(*,*) '   >>> WARNING: Gamma < Gamma_crit (Instability approaching)'
-      !       end if
-      !       write(*,*) '--------------------------------'
-      !    end if
-
-      ! end subroutine check_gr_instability
-
-
       subroutine check_gr_instability(id, s, ierr)
-         
-         ! GR INSTABILITY MONITOR
-         ! ... (Header description we wrote earlier) ...
+      ! ------------------------------------------------------------------------------
+      ! GR INSTABILITY MONITOR (v1.0 // M.Cantiello // 12.2025)
+      !
+      ! Purpose:
+      !   Monitors the stability of Supermassive Stars against General Relativistic 
+      !   radial instability. It computes the Chandrasekhar (1964) stability integral
+      !   to detect the onset of collapse.
+      !
+      ! Physics:
+      !   1. Calculates the stability integral I, which includes:
+      !      - Newtonian Stiffness Term: Integral[ (Gamma1 - 4/3) * (P/rho) dm ]
+      !      - GR Destabilizing Term: Integral[ K * (2Gm/rc^2) * (P/rho) dm ]
+      !      If I < 0, the fundamental radial mode frequency is imaginary (unstable).
+      !
+      !   2. Computes global diagnostics for comparison with literature (e.g. Nagele+2022):
+      !      - Pressure-weighted average <Gamma1>
+      !      - Global Compactness parameter (2GM / Rc^2)
+      !      - Critical Gamma threshold (Gamma_crit = 4/3 + 1.12 * Compactness)
+      ! ------------------------------------------------------------------------------   
 
          use star_def
          use const_def
@@ -420,18 +307,13 @@
          integer, intent(out) :: ierr
          
          integer :: k
-         real(dp) :: dm, P, rho, gam1
+         real(dp) :: dm, r_outer, r_inner, r_mid, m_mid, P, rho, gam1
          real(dp) :: term_newton, term_gr, integral_val
-         real(dp) :: c2, G_const
-         
-         ! Variables for geometry in CGS
-         real(dp) :: r_outer_cm, r_inner_cm, r_mid_cm
-         real(dp) :: m_mid_grams
-         real(dp) :: local_comp
+         real(dp) :: c2, G_const, compactness, local_comp
          
          ! Variables for Global Averages
          real(dp) :: sum_weights, sum_weighted_gam, avg_gamma, crit_gamma, global_compactness
-         real(dp) :: current_R_cm, current_M_g
+         real(dp) :: current_R
          
          ierr = 0
          c2 = clight**2
@@ -444,46 +326,38 @@
          
          do k = 1, s% nz
             
-            ! 1. Load Cell Properties (CGS standard in MESA)
-            dm   = s% dm(k)     ! Grams
-            P    = s% Peos(k)   ! dyn/cm^2
-            rho  = s% rho(k)    ! g/cm^3
-            gam1 = s% gamma1(k) ! dimensionless
+            ! 1. Load Cell Properties
+            dm = s% dm(k)
+            P = s% Peos(k)      
+            rho = s% rho(k)     
+            gam1 = s% gamma1(k) 
             
-            ! 2. Geometry Conversion (Solar Units -> CGS)
-            ! s% r is in Rsun. Convert to cm.
-            r_outer_cm = s% r(k) * Rsun
+            ! 2. Geometry Centering
+            ! 's% dr' does not exist in some versions. We calculate r_mid manually.
+            ! MESA indexing: k=1 (Surface) -> k=nz (Center)
+            r_outer = s% r(k)
             
             if (k < s% nz) then
-               r_inner_cm = s% r(k+1) * Rsun
+               r_inner = s% r(k+1)
             else
-               r_inner_cm = 0.0_dp
+               r_inner = 0.0_dp
             end if
             
-            r_mid_cm = 0.5_dp * (r_outer_cm + r_inner_cm)
+            r_mid = 0.5_dp * (r_outer + r_inner)
+            m_mid = s% m(k) - 0.5_dp * dm 
             
-            ! s% m is in Msun. Convert to grams.
-            ! Note: dm is ALREADY in grams.
-            ! m(k) is mass enclosed by outer boundary of cell k.
-            m_mid_grams = (s% m(k) * Msun) - 0.5_dp * dm 
-            
-            ! Safety check for center
-            if (r_mid_cm < 1.0d5) cycle 
+            if (r_mid < 1.0d5) cycle 
             
             ! 3. Instability Integral Terms
-            ! weighting factor dV_P = (P/rho) * dm has units of Energy (ergs)
-            
-            ! Newtonian Stiffness (Dimensionless coefficient * ergs)
+            ! Newtonian Stiffness
             term_newton = term_newton + (gam1 - 4.0_dp/3.0_dp) * (P/rho) * dm
             
-            ! GR Correction
-            ! Compactness = (2 G M / R c^2) is dimensionless.
-            ! We MUST use CGS for G, M, R, c here.
-            local_comp = (2.0_dp * G_const * m_mid_grams) / (r_mid_cm * c2)
-            
+            ! GR Correction (local compactness at this shell)
+            local_comp = (2.0_dp * G_const * m_mid) / (r_mid * c2)
             term_gr = term_gr + 1.12_dp * local_comp * (P/rho) * dm
 
-            ! 4. Accumulate Averages
+            ! 4. Accumulate Averages for Plotting
+            ! Weighting factor w = P/rho * dm (proportional to internal energy)
             sum_weights = sum_weights + (P/rho) * dm
             sum_weighted_gam = sum_weighted_gam + gam1 * (P/rho) * dm
 
@@ -492,10 +366,10 @@
          ! --- Instability Integral Check ---
          integral_val = term_newton - term_gr
          
-         ! Store in extra column (ensure you use xtra1 or xtra(1) depending on MESA ver)
+         ! Use a safe extra column (ensure s% xtra1 is defined in your defaults, or just print)
          s% xtra(1) = integral_val 
 
-         ! --- Global Parameters for Comparison ---
+         ! --- Global Parameters for Comparison with Papers ---
          if (sum_weights > 0.0_dp) then
             avg_gamma = sum_weighted_gam / sum_weights
          else
@@ -503,34 +377,147 @@
          end if
 
          ! Global Compactness (2GM / Rc^2)
-         current_R_cm = s% r(1) * Rsun
-         current_M_g  = s% star_mass * Msun
+         ! Use s% r(1) for the surface radius (R_phot is not always available)
+         current_R = s% r(1)
          
-         if (current_R_cm > 0.0_dp) then
-            global_compactness = (2.0_dp * G_const * current_M_g) / (current_R_cm * c2)
+         if (current_R > 0.0_dp) then
+            global_compactness = (2.0_dp * G_const * s% star_mass * Msun) / (current_R * c2)
          else
             global_compactness = 0.0_dp
          end if
 
-         ! Approximate Critical Gamma
+         ! Approximate Critical Gamma (Gamma_crit = 4/3 + 1.12 * Compactness)
          crit_gamma = (4.0_dp/3.0_dp) + 1.12_dp * global_compactness
 
          ! Print Status
-         if (mod(s% model_number, 10) == 0 .or. integral_val < 0.0_dp) then
+         ! Only print every 10 models or if unstable
+            if (mod(s% model_number, 10) == 0 .or. integral_val < 0.0_dp) then
             write(*, '(A, I6)') '--- GR Monitor Model: ', s% model_number
-            write(*, '(A, ES12.5, A, ES12.5)') '   Integral Val: ', integral_val, &
-                                                ' (Neg = Unstable)'
-            write(*, '(A, F10.6, A, F10.6)')   '   <Gamma_1>:    ', avg_gamma, &
-                                                ' vs Crit: ', crit_gamma
+            write(*, '(A, ES12.5, A, ES12.5)') '   Integral Val: ', integral_val, ' (Neg = Unstable)'
+            write(*, '(A, F10.6, A, F10.6)')   '   <Gamma_1>:    ', avg_gamma, ' vs Crit: ', crit_gamma
             write(*, '(A, ES12.5)')            '   Compactness:  ', global_compactness
-            
-            if (avg_gamma < crit_gamma) then
-               write(*,*) '   >>> WARNING: Gamma < Gamma_crit (Instability approaching)'
-            end if
             write(*,*) '--------------------------------'
          end if
 
       end subroutine check_gr_instability
+
+
+   !   subroutine check_gr_instability(id, s, ierr)
+         
+   !       ! GR INSTABILITY MONITOR - DIAGNOSTIC MODE
+   !       use star_def
+   !       use const_def
+   !       integer, intent(in) :: id
+   !       type (star_info), pointer :: s
+   !       integer, intent(out) :: ierr
+         
+   !       integer :: k
+   !       real(dp) :: dm, P, rho, gam1
+   !       real(dp) :: term_newton, term_gr, integral_val
+   !       real(dp) :: c2, G_const
+         
+   !       real(dp) :: r_mid_cm, m_mid_grams
+   !       real(dp) :: local_comp
+         
+   !       real(dp) :: sum_weights, sum_weighted_gam, avg_gamma, crit_gamma, global_compactness
+   !       real(dp) :: current_R_cm, current_M_g
+         
+   !       ierr = 0
+   !       c2 = clight**2
+   !       G_const = standard_cgrav
+
+   !       term_newton = 0.0_dp
+   !       term_gr = 0.0_dp
+   !       sum_weights = 0.0_dp
+   !       sum_weighted_gam = 0.0_dp
+         
+   !       ! --- DEBUG PRINTOUT (Only for the first model call) ---
+   !       if (s% model_number > 0 .and. mod(s% model_number, 10) == 0) then
+   !          write(*,*) ' '
+   !          write(*,*) '========== UNIT CHECK DEBUGGER =========='
+   !          write(*, '(A, ES14.6)') 'Const: Msun (g)       = ', Msun
+   !          write(*, '(A, ES14.6)') 'Const: Rsun (cm)      = ', Rsun
+   !          write(*, '(A, ES14.6)') 'Const: G (cgs)        = ', G_const
+   !          write(*, '(A, ES14.6)') 'Const: c^2 (cgs)      = ', c2
+   !          write(*,*) '-----------------------------------------'
+   !          write(*, '(A, ES14.6)') 'Var: s% star_mass (Msun?) = ', s% star_mass
+   !          write(*, '(A, ES14.6)') 'Var: s% r(1) (Rsun?)     = ', s% r(1)
+   !          write(*, '(A, ES14.6)') 'Var: s% rho(1) (g/cm3)   = ', s% rho(1)
+   !          write(*, '(A, ES14.6)') 'Var: s% Peos(1) (dyn)    = ', s% Peos(1)
+   !          write(*, '(A, ES14.6)') 'Var: s% dm(1) (g?)       = ', s% dm(1)
+   !          write(*,*) '========================================='
+   !          write(*,*) ' '
+   !       end if
+
+   !       do k = 1, s% nz
+            
+   !          ! Load Variables
+   !          dm   = s% dm(k)     ! Should be Grams
+   !          P    = s% Peos(k)   ! Should be dyn/cm^2
+   !          rho  = s% rho(k)    ! Should be g/cm^3
+   !          gam1 = s% gamma1(k) 
+            
+   !          ! Geometry Conversion
+   !          ! We assume s% r is Rsun and s% m is Msun
+   !          r_mid_cm = s% r(k) * Rsun
+   !          m_mid_grams = (s% m(k) * Msun) - 0.5_dp * dm 
+            
+   !          if (r_mid_cm < 1.0d5) cycle 
+            
+   !          ! Calculate Terms
+   !          term_newton = term_newton + (gam1 - 4.0_dp/3.0_dp) * (P/rho) * dm
+            
+   !          local_comp = (2.0_dp * G_const * m_mid_grams) / (r_mid_cm * c2)
+   !          term_gr = term_gr + 1.12_dp * local_comp * (P/rho) * dm
+
+   !          ! Averages
+   !          sum_weights = sum_weights + (P/rho) * dm
+   !          sum_weighted_gam = sum_weighted_gam + gam1 * (P/rho) * dm
+            
+   !          ! --- DEBUG: Check the FIRST cell calculation ---
+   !          if (s% model_number > 0 .and. mod(s% model_number, 10) == 0 .and. k==1) then
+   !             write(*,*) '--- First Cell Calculation (k=1) ---'
+   !             write(*, '(A, ES14.6)') 'r_mid (cm)    : ', r_mid_cm
+   !             write(*, '(A, ES14.6)') 'm_mid (g)     : ', m_mid_grams
+   !             write(*, '(A, ES14.6)') 'local_comp    : ', local_comp
+   !             write(*, '(A, ES14.6)') 'P/rho         : ', P/rho
+   !             write(*, '(A, ES14.6)') 'dm            : ', dm
+   !             write(*, '(A, ES14.6)') 'Term GR (raw) : ', 1.12_dp * local_comp * (P/rho) * dm
+   !             write(*,*) '--------------------------------'
+   !          end if
+
+   !       end do
+         
+   !       integral_val = term_newton - term_gr
+   !       s% xtra(1) = integral_val 
+
+   !       ! --- Global Compactness ---
+   !       current_R_cm = s% r(1) * Rsun
+   !       current_M_g  = s% star_mass * Msun
+         
+   !       if (current_R_cm > 0.0_dp) then
+   !          global_compactness = (2.0_dp * G_const * current_M_g) / (current_R_cm * c2)
+   !       else
+   !          global_compactness = 0.0_dp
+   !       end if
+
+   !       if (sum_weights > 0.0_dp) then
+   !          avg_gamma = sum_weighted_gam / sum_weights
+   !       else
+   !          avg_gamma = 0.0_dp
+   !       end if
+
+   !       crit_gamma = (4.0_dp/3.0_dp) + 1.12_dp * global_compactness
+
+   !       if (mod(s% model_number, 10) == 0 .or. integral_val < 0.0_dp) then
+   !          write(*, '(A, I6)') '--- GR Monitor Model: ', s% model_number
+   !          write(*, '(A, ES12.5, A, ES12.5)') '   Integral Val: ', integral_val, ' (Neg = Unstable)'
+   !          write(*, '(A, F10.6, A, F10.6)')   '   <Gamma_1>:    ', avg_gamma, ' vs Crit: ', crit_gamma
+   !          write(*, '(A, ES12.5)')            '   Compactness:  ', global_compactness
+   !          write(*,*) '--------------------------------'
+   !       end if
+
+   !    end subroutine check_gr_instability
 
 
       
