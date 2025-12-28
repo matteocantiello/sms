@@ -87,13 +87,13 @@
    History_Panels1_yaxis_name(2) = 'log_Lnuc' 
    History_Panels1_yaxis_reversed(2) = .false.
    History_Panels1_ymin(2) = 0d0 ! only used if /= -101d0
-   History_Panels1_ymax(2) = 20d0 ! only used if /= -101d0        
+   History_Panels1_ymax(2) = 22d0 ! only used if /= -101d0        
    History_Panels1_dymin(2) = 1 
    
    History_Panels1_other_yaxis_name(2) = 'log_Lneu' 
    History_Panels1_other_yaxis_reversed(2) = .false.
    History_Panels1_other_ymin(2) = 0d0 ! only used if /= -101d0
-   History_Panels1_other_ymax(2) = 20d0 ! only used if /= -101d0        
+   History_Panels1_other_ymax(2) = 22d0 ! only used if /= -101d0        
    History_Panels1_other_dymin(2) = 1 
    
    Grid2_plot_name(2) = 'Text_Summary1'
@@ -162,7 +162,7 @@
    !Profile_Panels1_ymin(1) = 0d0 ! only used if /= -101d0
    !Profile_Panels1_ymax(1) = 1d0 ! only used if /= -101d0
    
-   Profile_Panels1_yaxis_name(2) = 'superad_reduction_factor'
+   Profile_Panels1_yaxis_name(2) = 'entropy'
    Profile_Panels1_yaxis_log(2) = .true.
    Profile_Panels1_other_yaxis_name(2) = 'gradT_sub_grada' ! 'vel_km_per_s'
    
