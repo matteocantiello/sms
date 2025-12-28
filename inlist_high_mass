@@ -38,15 +38,15 @@
   
 
    ! Set Accretion properties (Important: Accretio Rate x_ctrl(1) should Match what is set in mass_change. Probably will automate this later)
-   x_ctrl(1) = 0.01    ! Accretion Rate (Msun/yr), to calculate Pressure and Density of the accretio stream
+   x_ctrl(1) = 0.1    ! Accretion Rate (Msun/yr), to calculate Pressure and Density of the accretio stream
    x_ctrl(2) = 5000   ! Temperature of Accreted Material (K)
-   mass_change = 0.01  ! Accretion Rate (Msun/yr), to change stellar mass
+   mass_change = 0.1  ! Accretion Rate (Msun/yr), to change stellar mass
 
 
    ! Treatment of radiation-dominated envelopes 
    Pextra_factor = 2.0  ! 1.36                 ! Extra Pressure at surface (See Herrington et al. https://arxiv.org/pdf/2208.00008 )  
    okay_to_reduce_gradT_excess = .true.        ! Reduction of Superadiabaticity  
-   ! opacity_max = 1                           ! Set limits on opacity 
+   opacity_max = 1                             ! Set limits on opacity (this is an artificial / engineering trick to avoid dealing with outer envelope stability issues) 
 
 
    ! Energy Conservation 
@@ -83,7 +83,7 @@
   ! overshoot_f0(2) = 0.004
 
    ! Convergence and tolerances
-   mesh_delta_coeff = 1.0d0  ! 2.0
+   mesh_delta_coeff = 2.0d0  ! 1.0
    varcontrol_target = 1d-3
    ! use_gold2_tolerances = .true.
   
